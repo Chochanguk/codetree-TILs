@@ -65,6 +65,9 @@ def get_artifacts(board):
 
 # 빈 칸에 벽면 유물로 채우는 함수
 def fill_empty_spaces(board, wall_nums):
+    """
+    빈 칸을 벽면에서 가져온 유물로 채우는 함수
+    """
     for col in range(5):  # 열 순서대로
         for row in range(4, -1, -1):  # 아래에서 위로 빈 칸 채우기
             if board[row][col] == 0 and wall_nums:
