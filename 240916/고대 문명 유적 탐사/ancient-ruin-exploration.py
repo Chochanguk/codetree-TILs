@@ -104,33 +104,43 @@ board = [list(map(int, input().split())) for _ in range(5)]  # 5x5 보드 상태
 wall_nums = deque(list(map(int, input().split())))  # 벽면에서 가져올 유물 번호 입력
 
 # 턴을 진행
-for turn in range(K):
-    best_score = 0  # 이번 턴에서 얻을 수 있는 최대 점수
-    best_rotated_board = None  # 최적의 회전 결과를 저장할 보드
+for turn in range(K):  # 총 K번의 턴을 진행
+    best_score = 0  # 이번 턴에서 얻을 수 있는 최대 점수를 저장할 변수
+    best_rotated_board = None  # 최적의 회전 결과를 저장할 보드 (초기값은 None)
 
     # 3x3 구역을 선택하고 회전 각도에 따른 점수 계산
-    for i in range(1, 4):  # 중심 좌표 (1,1) ~ (3,3)
-        for j in range(1, 4):
-            # 각 중심 좌표 별로 한번씩 돌려서 값을 구함
-            temp_board = deepcopy(board)  # 현재 보드를 복사
-            for angle in [90, 180, 270]:  # 90도, 180도, 270도로 회전
-                temp_board = rotate(board, i, j, angle)  # 회전된 보드
-                score = get_artifacts(temp_board)  # 유물 점수 계산
+    for angle in [90, 180, 270]:  # 90도, 180도, 270도의 세 가지 회전 각도를 시도
+        for i in range(1, 4):  # 3x3 구역의 중심 x좌표 (1, 2, 3)
+            for j in range(1, 4):  # 3x3 구역의 중심 y좌표 (1, 2, 3)
+                # 각 중심 좌표 별로 회전을 수행하고, 회전 결과 보드를 반환
+                temp_board = rotate(board, i, j, angle)  # 중심 좌표 (i, j)에서 주어진 각도로 회전
 
-                # 최대 점수를 얻는 구간을 선택
+                # 회전된 보드에서 유물 점수 계산
+                score = get_artifacts(temp_board)  # BFS를 사용해 3개 이상 연결된 유물을 찾아 제거하고 점수 계산
+
+                # 현재까지의 최대 점수와 비교하여 더 높은 점수를 가진 보드를 저장
                 if score > best_score:
-                    best_score = score
-                    best_rotated_board = deepcopy(temp_board)  # 최적의 보드 저장
+                    best_score = score  # 최대 점수 갱신
+                    best_rotated_board = deepcopy(temp_board)  # 최적의 보드를 깊은 복사하여 저장
 
-    if best_rotated_board is None:  # 더 이상 유물이 없으면 탐사 종료
-        break
+    # 만약 최적의 회전 결과가 없으면 (즉, 회전 후 얻을 유물이 없으면) 탐사를 종료
+    if best_rotated_board is None:
+        break  # 더 이상 탐사가 불가능하면 루프 종료
 
-    board = best_rotated_board  # 최적의 회전 결과를 보드에 적용
+    # 최적의 회전 결과를 원본 보드에 적용
+    board = best_rotated_board
+
+    # 추가적으로 빈 칸을 채우고, 새로운 유물 점수를 계산하는 과정
     while True:
-        board = fill_empty_spaces(board, wall_nums)  # 빈 칸 채우기
-        additional_score = get_artifacts(board)  # 추가 유물 점수 계산
-        if additional_score == 0:  # 더 이상 제거할 유물이 없으면 종료
-            break
-        best_score += additional_score  # 추가 점수 합산
+        board = fill_empty_spaces(board, wall_nums)  # 빈 칸을 벽면 유물로 채움
+        additional_score = get_artifacts(board)  # 새로 채워진 보드에서 추가 유물을 탐색하고 점수 계산
 
-    print(best_score, end=" ")  # 각 턴의 결과 출력
+        # 더 이상 유물이 없으면 종료 (유물이 연결되지 않으면 탐사 종료)
+        if additional_score == 0:
+            break
+
+        # 추가로 획득한 점수를 기존 점수에 합산
+        best_score += additional_score
+
+        # 이번 턴의 결과(최종 점수)를 출력 (space로 구분해 출력)
+    print(best_score, end=" ")
