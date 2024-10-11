@@ -1,27 +1,32 @@
-from collections import deque
+import heapq
 
-# BFS를 사용해 최단 거리를 계산
-def bfs(start, n, graph):
+# 다익스트라 알고리즘을 사용해 최단 거리를 계산
+def dijkstra(start, n, graph):
     dist = [float('inf')] * n
     dist[start] = 0
-    q = deque([start])
+    q = []
+    heapq.heappush(q, (0, start))  # (거리, 노드)
 
     while q:
-        current_node = q.popleft()
-        current_dist = dist[current_node]
+        current_dist, current_node = heapq.heappop(q)
 
-        # graph.get을 사용해 current_node가 없을 경우 빈 리스트 반환
+        # 이미 처리된 적이 있는 노드라면 무시
+        if current_dist > dist[current_node]:
+            continue
+
         for next_node, weight in graph.get(current_node, []):
-            if current_dist + weight < dist[next_node]:
-                dist[next_node] = current_dist + weight
-                q.append(next_node)
+            distance = current_dist + weight
+
+            # 더 짧은 경로를 찾은 경우
+            if distance < dist[next_node]:
+                dist[next_node] = distance
+                heapq.heappush(q, (distance, next_node))
 
     return dist
 
-
 # 메인 함수 정의와 실행
 Q = int(input())  # 명령 수
-graph = {}  # 도시에 대한 그래프 (defaultdict 사용 안함)
+graph = {}  # 도시에 대한 그래프
 products = {}  # 여행 상품 정보를 저장
 start_city = 0  # 초기 출발 도시
 
@@ -43,7 +48,7 @@ for _ in range(Q):
             graph[v].append((u, w))
             graph[u].append((v, w))
 
-        dist = bfs(start_city, n, graph)  # BFS로 초기 출발지에서 각 도시까지의 최단 거리 계산
+        dist = dijkstra(start_city, n, graph)  # 다익스트라로 초기 출발지에서 각 도시까지의 최단 거리 계산
 
     elif cmd_type == 200:  # 여행 상품 생성
         id, revenue, dest = command[1], command[2], command[3]
@@ -77,7 +82,7 @@ for _ in range(Q):
 
     elif cmd_type == 500:  # 여행 상품의 출발지 변경
         start_city = command[1]
-        dist = bfs(start_city, n, graph)  # 새로운 출발지에서 각 도시까지 최단 거리 다시 계산
+        dist = dijkstra(start_city, n, graph)  # 새로운 출발지에서 각 도시까지 최단 거리 다시 계산
         # 모든 상품의 cost 값을 갱신
         for id in products:
             revenue, dest, _ = products[id]
