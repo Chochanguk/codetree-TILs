@@ -1,28 +1,31 @@
 import heapq
 
-# 다익스트라 알고리즘을 사용해 최단 거리를 계산
-def dijkstra(start, n, graph):
-    dist = [float('inf')] * n
-    dist[start] = 0
-    q = []
-    heapq.heappush(q, (0, start))  # (거리, 노드)
+# 다익스트라 알고리즘을 사용해 start에서 목표 노드까지의 최단 거리를 계산
+def dijkstra_single_target(start, target, graph):
+    dist = {start: 0}
+    q = [(0, start)]  # (거리, 노드)
 
     while q:
         current_dist, current_node = heapq.heappop(q)
 
+        # 목표 도착지점에 도달하면 바로 반환
+        if current_node == target:
+            return current_dist
+
         # 이미 처리된 적이 있는 노드라면 무시
-        if current_dist > dist[current_node]:
+        if current_dist > dist.get(current_node, float('inf')):
             continue
 
         for next_node, weight in graph.get(current_node, []):
             distance = current_dist + weight
 
-            # 더 짧은 경로를 찾은 경우
-            if distance < dist[next_node]:
+            if distance < dist.get(next_node, float('inf')):
                 dist[next_node] = distance
                 heapq.heappush(q, (distance, next_node))
 
-    return dist
+    # 만약 도착지에 도달할 수 없다면 무한대 반환
+    return float('inf')
+
 
 # 메인 함수 정의와 실행
 Q = int(input())  # 명령 수
@@ -38,7 +41,7 @@ for _ in range(Q):
         n, m = command[1], command[2]
         for i in range(m):
             v, u, w = command[3 + 3 * i], command[4 + 3 * i], command[5 + 3 * i]
-            
+
             # graph에 v와 u가 없으면 빈 리스트로 초기화
             if v not in graph:
                 graph[v] = []
@@ -48,11 +51,10 @@ for _ in range(Q):
             graph[v].append((u, w))
             graph[u].append((v, w))
 
-        dist = dijkstra(start_city, n, graph)  # 다익스트라로 초기 출발지에서 각 도시까지의 최단 거리 계산
-
     elif cmd_type == 200:  # 여행 상품 생성
         id, revenue, dest = command[1], command[2], command[3]
-        cost = dist[dest]  # 현재 출발지에서 도착지까지의 최단 거리
+        # 상품의 목표지점까지 최단 거리 계산
+        cost = dijkstra_single_target(start_city, dest, graph)
         products[id] = (revenue, dest, cost)  # 관리 품목
 
     elif cmd_type == 300:  # 여행 상품 취소
@@ -69,7 +71,8 @@ for _ in range(Q):
             profit = revenue - cost  # 이득
 
             # 이득이 0 이상이고 best_product가 None이 아닌 경우에만 비교
-            if profit >= 0 and (best_product is None or profit > best_value or (profit == best_value and id < best_product)):
+            if profit >= 0 and (
+                    best_product is None or profit > best_value or (profit == best_value and id < best_product)):
                 best_product = id  # id 갱신
                 best_value = profit  # 이득 갱신
 
@@ -82,9 +85,8 @@ for _ in range(Q):
 
     elif cmd_type == 500:  # 여행 상품의 출발지 변경
         start_city = command[1]
-        dist = dijkstra(start_city, n, graph)  # 새로운 출발지에서 각 도시까지 최단 거리 다시 계산
-        # 모든 상품의 cost 값을 갱신
+        # 모든 상품의 cost 값을 새 출발지에서의 최단 거리로 갱신
         for id in products:
             revenue, dest, _ = products[id]
-            new_cost = dist[dest]
+            new_cost = dijkstra_single_target(start_city, dest, graph)
             products[id] = (revenue, dest, new_cost)
