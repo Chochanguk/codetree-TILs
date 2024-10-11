@@ -10,12 +10,14 @@ def bfs(start, n, graph):
         current_node = q.popleft()
         current_dist = dist[current_node]
 
-        for next_node, weight in graph[current_node]:
+        # graph.get을 사용해 current_node가 없을 경우 빈 리스트 반환
+        for next_node, weight in graph.get(current_node, []):
             if current_dist + weight < dist[next_node]:
                 dist[next_node] = current_dist + weight
                 q.append(next_node)
 
     return dist
+
 
 # 메인 함수 정의와 실행
 Q = int(input())  # 명령 수
