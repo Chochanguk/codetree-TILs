@@ -59,26 +59,26 @@ def find_bomb(k, k_pos):
     return n, x_list, y_list
 
 
-def minus(board, k_pos, k_board, knights):
-    L = len(board)
+def minus(k_pos, k_board, knights, k, moved_k):
     deleted_list = []
-    for key, values in knights.items():
-        # 해당 기사의 함정 수
+    # 밀려난 기사들만 셈
+    for key in moved_k:
+        if key == k:
+            continue
+        if key not in k_pos:
+            continue
         n, x_list, y_list = find_bomb(key, k_pos)
-        # print(str(key) + "의 제거 횟수: " + str(n))
         knights[key][4] -= n
-        if (knights[key][4]) <= 0 and key in k_pos:
-            # print("제거된 기사: ", key)
+        if knights[key][4] <= 0:
             deleted_list.append(key)
             (sx, sy), (ex, ey) = k_pos[key]
             for i in range(sx, ex + 1):
                 for j in range(sy, ey + 1):
-                    k_board[i][j] = 0  # 전체 영역 초기화
+                    k_board[i][j] = 0
             del k_pos[key]
 
-    for k in deleted_list:
-        # print("삭제된 ", k)
-        del knights[k]
+    for key in deleted_list:
+        del knights[key]
 
     return k_pos, k_board, knights
 
@@ -139,8 +139,6 @@ for i in range(N):
     r, c, h, w, k = list(map(int, input().split()))
     knights[i + 1] = [r, c, h, w, k]
     r, c = r - 1, c - 1
-    # print()
-    # print(str((i + 1)) + " 초기위치(r,c):", r, c)
     er, ec = r + (h - 1), c + (w - 1)  # 시점
     k_pos[i + 1] = ((r, c), (er, ec))
 
@@ -149,14 +147,10 @@ for i in range(N):
             k_board[x][y] = (i + 1)
 
 # 시뮬레이션 시작 => 추후 연동
+total_damage = 0
 for _ in range(Q):
     k, d = map(int, input().split())
     q_list.append((k, d))
-# print("board:", board)  # 현재 함점, 벽의 상황
-# print("k_pos: ", k_pos)  # 기사의 시점, 종점 직사각형
-# print("k_board:, ", k_board)  # 기사위치를 마킹 있으면 기사번호 없으면 0
-# print("knights: ", knights)  # 기사 정보
-# print("q_list: ", q_list)  # 명령 집합
 
 # 이동 함수
 '''
@@ -168,17 +162,19 @@ for _ in range(Q):
 4. 만약 기사가 이동하려는 방향 끝에 벽이 있다면 모든 기사는 원상 복구
 5. 체스판에 사라진 기사에게는 명령을 내려도 반응 x
 '''
-# print(move(k_pos,1,1))
+
 from copy import deepcopy
 
-for k, d in q_list:
+init_damages={}
+for k in  knights:
+    init_damages[k]=knights[k][4]
+
+for i, (k, d) in enumerate(q_list):
     can_damage = True
     if k not in k_pos:
         continue
 
-    # print("before:",k, k_pos[k])
     init_pos = deepcopy(k_pos)
-    # print("====" + str(k) + "의 " + str(d) + " 방향 이동====")
     k_pos = move(k_pos, k, d)
     moved_k = []  # 이동한 기사들을 넣음
     visited=set() # 움직였던 기사들을 넣음
@@ -195,9 +191,9 @@ for k, d in q_list:
         4. 괜찮으면 
         '''
         #
-        # print("moved_k:",moved_k)
+
         while moved_k:
-            # print("visited:", visited)
+
             knight = moved_k.pop()
 
             if knight not in visited:
@@ -206,8 +202,6 @@ for k, d in q_list:
                 continue
             # 이동 후 이동한 위치에 기사가 있으면 추가
             k_pos = move(k_pos, knight, d)
-            # print("이동한 기사: ",knight)
-            # print(k_pos )
             (sx, sy), (ex, ey) = k_pos[knight]
             if is_ok(board, L, sx, sy, ex, ey):
                 moved_k += is_knight(k_board, knight, sx, sy, ex, ey)
@@ -227,15 +221,16 @@ for k, d in q_list:
     k_board = deepcopy(update_k_board(L, k_pos))
     # 체력 감소
     if can_damage:
-        k_pos, k_board, knights = deepcopy(minus(board, k_pos, k_board, knights))
-    # print("삭제된 ")
-    # print("after knights: ", knights)  # 기사 정보
-    # print("after k_pos: ", k_pos)
-    # print("after k_board:", k_board)
-    # print()
-answer = 0
-for i in k_pos:
-    answer += find_bomb(i, k_pos)[0]
-print(answer)
+        # 명령받은 기사는 피해 받지 않음
+        if k in moved_k:
+            moved_k.remove(k)
+        if i != len(q_list) - 1:
+            k_pos, k_board, knights = deepcopy(minus( k_pos, k_board, knights,k,list(visited)))
+
+
+for k in  knights:
+    total_damage+= init_damages[k]-knights[k][4]
+
+print(total_damage)
 
 
