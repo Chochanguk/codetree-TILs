@@ -1,9 +1,9 @@
-# with open('test_case.txt','r') as file:
-#     input_lines =[line.strip() for line in file]
-# # input()을 다음줄에서부 읽어 오도록 하는 코드
-# input=iter(input_lines).__next__ # __next__: 이터레이터에서 다음줄을 꺼내는 역할
+with open('test_case.txt','r') as file:
+    input_lines =[line.strip() for line in file]
+# input()을 다음줄에서부 읽어 오도록 하는 코드
+input=iter(input_lines).__next__ # __next__: 이터레이터에서 다음줄을 꺼내는 역할
 
-# T=int(input())
+T=int(input())
 
 
 def move(k_pos, k, d):
@@ -126,134 +126,134 @@ L, N, Q
 [i,d] => i번 기사에게 d로 한칸 이동하라는 이동 (d: 0,1,2,3 => 상,우,하,좌)
 
 '''
-# for _ in range(T):
-# 입력
-L, N, Q = map(int, input().split())
-# board=[[0]*L for _ in range(L)]
-board = []
-knights = {}  # 기사들
-q_list = []  # 명령어 리스트
+for _ in range(T):
+    # 입력
+    L, N, Q = map(int, input().split())
+    # board=[[0]*L for _ in range(L)]
+    board = []
+    knights = {}  # 기사들
+    q_list = []  # 명령어 리스트
 
-for _ in range(L):
-    row = list(map(int, input().split()))
-    board.append(row)
+    for _ in range(L):
+        row = list(map(int, input().split()))
+        board.append(row)
 
-# 영역 표시 추가해야함
-k_pos = {}
-k_board = [[0] * L for _ in range(L)]
-for i in range(N):
-    r, c, h, w, k = list(map(int, input().split()))
-    knights[i + 1] = [r, c, h, w, k]
-    r, c = r - 1, c - 1
-    er, ec = r + (h - 1), c + (w - 1)  # 시점
-    k_pos[i + 1] = ((r, c), (er, ec))
+    # 영역 표시 추가해야함
+    k_pos = {}
+    k_board = [[0] * L for _ in range(L)]
+    for i in range(N):
+        r, c, h, w, k = list(map(int, input().split()))
+        knights[i + 1] = [r, c, h, w, k]
+        r, c = r - 1, c - 1
+        er, ec = r + (h - 1), c + (w - 1)  # 시점
+        k_pos[i + 1] = ((r, c), (er, ec))
 
-    for x in range(r, er + 1):
-        for y in range(c, ec + 1):
-            k_board[x][y] = (i + 1)
+        for x in range(r, er + 1):
+            for y in range(c, ec + 1):
+                k_board[x][y] = (i + 1)
 
-# print("board:", board)  # 현재 함점, 벽의 상황
-# print("k_pos: ", k_pos)  # 기사의 시점, 종점 직사각형
-# print("k_board:, ", k_board)  # 기사위치를 마킹 있으면 기사번호 없으면 0
-# print("knights: ", knights)  # 기사 정보
-# print("q_list: ", q_list)  # 명령 집합
+    # print("board:", board)  # 현재 함점, 벽의 상황
+    # print("k_pos: ", k_pos)  # 기사의 시점, 종점 직사각형
+    # print("k_board:, ", k_board)  # 기사위치를 마킹 있으면 기사번호 없으면 0
+    # print("knights: ", knights)  # 기사 정보
+    # print("q_list: ", q_list)  # 명령 집합
 
-# 이동 함수
-'''
-1. 기사이동
+    # 이동 함수
+    '''
+    1. 기사이동
+    
+    1. 상하좌우로만 한칸씩 움직임.
+    2. 이동하는 위치에 기사 존재시 그 방향으로 한칸 밀려남.
+    3. 만약 그 옆에 또 기사가 있으면 또 연쇄적으로 한칸 밀려남
+    4. 만약 기사가 이동하려는 방향 끝에 벽이 있다면 모든 기사는 원상 복구
+    5. 체스판에 사라진 기사에게는 명령을 내려도 반응 x
+    '''
 
-1. 상하좌우로만 한칸씩 움직임.
-2. 이동하는 위치에 기사 존재시 그 방향으로 한칸 밀려남.
-3. 만약 그 옆에 또 기사가 있으면 또 연쇄적으로 한칸 밀려남
-4. 만약 기사가 이동하려는 방향 끝에 벽이 있다면 모든 기사는 원상 복구
-5. 체스판에 사라진 기사에게는 명령을 내려도 반응 x
-'''
+    from copy import deepcopy
+    from collections import deque
+    # 시뮬레이션 시작
+    init_damages={}
+    for k in  knights:
+        init_damages[k]=knights[k][4]
 
-from copy import deepcopy
-from collections import deque
-# 시뮬레이션 시작
-init_damages={}
-for k in  knights:
-    init_damages[k]=knights[k][4]
+    for i in range(Q):
+        k, d = map(int, input().split())
+        # print("===="+str(k)+"의 이동 방향:"+str(d)+"====")
 
-for i in range(Q):
-    k, d = map(int, input().split())
-    # print("===="+str(k)+"의 이동 방향:"+str(d)+"====")
+        can_damage = True
+        if k not in k_pos:
+            continue
 
-    can_damage = True
-    if k not in k_pos:
-        continue
+        init_pos = deepcopy(k_pos)
+        k_pos = move(k_pos, k, d)
+        moved_k = deque()  # 이동한 기사들을 넣음
+        visited=set() # 움직였던 기사들을 넣음
+        (sx, sy), (ex, ey) = k_pos[k]
+        # 움직여도 괜찮으면
+        if is_ok(board, L, sx, sy, ex, ey):
+            # 다음 위치에 기사가 있냐?`
+            moved_k.extend( is_knight(k_board, k, sx, sy, ex, ey))
 
-    init_pos = deepcopy(k_pos)
-    k_pos = move(k_pos, k, d)
-    moved_k = deque()  # 이동한 기사들을 넣음
-    visited=set() # 움직였던 기사들을 넣음
-    (sx, sy), (ex, ey) = k_pos[k]
-    # 움직여도 괜찮으면
-    if is_ok(board, L, sx, sy, ex, ey):
-        # 다음 위치에 기사가 있냐?`
-        moved_k.extend( is_knight(k_board, k, sx, sy, ex, ey))
+            '''
+            1. k_list의 기사 하나씩 이동
+            2. 그 친구가 안괜찮아?
+            3. 반복문 종료
+            4. 괜찮으면 
+            '''
+            #
 
-        '''
-        1. k_list의 기사 하나씩 이동
-        2. 그 친구가 안괜찮아?
-        3. 반복문 종료
-        4. 괜찮으면 
-        '''
+            while moved_k:
+
+                knight = moved_k.popleft()
+
+                if knight not in visited:
+                    visited.add(knight)
+                else:
+                    continue
+                # 이동 후 이동한 위치에 기사가 있으면 추가
+                k_pos = move(k_pos, knight, d)
+                (sx, sy), (ex, ey) = k_pos[knight]
+                if is_ok(board, L, sx, sy, ex, ey):
+                    moved_k.extend( is_knight(k_board, knight, sx, sy, ex, ey))
+            # print("전부다 이동 한 후k_pos: ",k_pos)
+
+            # 체크 했는데 하나라도 잘못된 기사 있으면 원상복구
+            for key, values in k_pos.items():
+                (nsx, nsy), (nex, ney) = values
+                if not is_ok(board, L, nsx, nsy, nex, ney):
+                    k_pos = deepcopy(init_pos)
+                    can_damage = False
+        else:
+            k_pos = move(k_pos, k, (d + 2) % 4)  # 반대로 다시 back
+            can_damage = False
+            continue
         #
+        # print("before knights: ", knights)  # 기사 정보
+        # print("before k_pos: ", k_pos)
+        # print("before k_board:", k_board)
+        # print("before knights: ", knights)  # 기사 정보
+        # k_pos를 통한 k_board 갱신
+        k_board = deepcopy(update_k_board(L, k_pos))
+        # 체력 감소
 
-        while moved_k:
+        if can_damage:
+            # 실제 움직였던 기사들만 확인
+            actual_moved=[]
+            for key in visited:
+                # 초기 위치와 다른 기사들 => 움직인 기사들만 추적 + 명령받은 기사는 피해 받지 않음
+                if k_pos[key] != init_pos[key] and key!=k:
+                    actual_moved.append(key)
+            k_pos, k_board, knights = minus(k_pos, k_board, knights, k, actual_moved)
+        # print()
+        # print("after knights: ", knights)  # 기사 정보
+        # print("after k_pos: ", k_pos)
+        # print("after k_board:", k_board)
+        # print("after knights: ", knights)  # 기사 정보
+        # print()
+    total_damage=0
+    for k in  knights:
+        total_damage+= init_damages[k]-knights[k][4]
 
-            knight = moved_k.popleft()
-
-            if knight not in visited:
-                visited.add(knight)
-            else:
-                continue
-            # 이동 후 이동한 위치에 기사가 있으면 추가
-            k_pos = move(k_pos, knight, d)
-            (sx, sy), (ex, ey) = k_pos[knight]
-            if is_ok(board, L, sx, sy, ex, ey):
-                moved_k.extend( is_knight(k_board, knight, sx, sy, ex, ey))
-        # print("전부다 이동 한 후k_pos: ",k_pos)
-
-        # 체크 했는데 하나라도 잘못된 기사 있으면 원상복구
-        for key, values in k_pos.items():
-            (nsx, nsy), (nex, ney) = values
-            if not is_ok(board, L, nsx, nsy, nex, ney):
-                k_pos = deepcopy(init_pos)
-                can_damage = False
-    else:
-        k_pos = move(k_pos, k, (d + 2) % 4)  # 반대로 다시 back
-        can_damage = False
-        continue
-    #
-    # print("before knights: ", knights)  # 기사 정보
-    # print("before k_pos: ", k_pos)
-    # print("before k_board:", k_board)
-    # print("before knights: ", knights)  # 기사 정보
-    # k_pos를 통한 k_board 갱신
-    k_board = deepcopy(update_k_board(L, k_pos))
-    # 체력 감소
-
-    if can_damage:
-        # 실제 움직였던 기사들만 확인
-        actual_moved=[]
-        for key in visited:
-            # 초기 위치와 다른 기사들 => 움직인 기사들만 추적 + 명령받은 기사는 피해 받지 않음
-            if k_pos[key] != init_pos[key] and key!=k:
-                actual_moved.append(key)
-        k_pos, k_board, knights = minus(k_pos, k_board, knights, k, actual_moved)
-    # print()
-    # print("after knights: ", knights)  # 기사 정보
-    # print("after k_pos: ", k_pos)
-    # print("after k_board:", k_board)
-    # print("after knights: ", knights)  # 기사 정보
-    # print()
-total_damage=0
-for k in  knights:
-    total_damage+= init_damages[k]-knights[k][4]
-
-print(total_damage)
+    print(total_damage)
 
 
