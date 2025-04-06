@@ -1,12 +1,9 @@
-# with open('123.txt', 'r', encoding='utf-8') as file:
-#     input_lines = file.readlines()
-# input_lines = [line.strip() for line in input_lines]
-# input_iter = iter(input_lines)
-# input = lambda: next(iter(input_lines))
+# with open('test_case.txt','r') as file:
+#     input_lines =[line.strip() for line in file]
+# # input()을 다음줄에서부 읽어 오도록 하는 코드
+# input=iter(input_lines).__next__ # __next__: 이터레이터에서 다음줄을 꺼내는 역할
 
-# with open('test_case.txt', 'r', encoding='utf-8') as file:
-#     input_lines = [line.strip() for line in file]
-# input = iter(input_lines).__next__
+# T=int(input())
 
 
 def move(k_pos, k, d):
@@ -56,17 +53,13 @@ def update_k_board(L, k_pos):
 # 해당 기사에 포함되어있는 함정의 수 찾는 함수
 def find_bomb(k, k_pos):
     n = 0
-    x_list = []
-    y_list = []
 
     (sx, sy), (ex, ey) = k_pos[k]
     for i in range(sx, ex + 1):
         for j in range(sy, ey + 1):
             if board[i][j] == 1:
                 n += 1
-                x_list.append(i)
-                y_list.append(j)
-    return n, x_list, y_list
+    return n
 
 
 def minus(k_pos, k_board, knights, k, moved_k):
@@ -77,7 +70,7 @@ def minus(k_pos, k_board, knights, k, moved_k):
             continue
         if key not in k_pos:
             continue
-        n, x_list, y_list = find_bomb(key, k_pos)
+        n= find_bomb(key, k_pos)
         knights[key][4] -= n
         # if n>0 and (key==6 or key==9):
         #     # print(str(key) +"가 받은 피해: "+str(n))
@@ -133,6 +126,7 @@ L, N, Q
 [i,d] => i번 기사에게 d로 한칸 이동하라는 이동 (d: 0,1,2,3 => 상,우,하,좌)
 
 '''
+# for _ in range(T):
 # 입력
 L, N, Q = map(int, input().split())
 # board=[[0]*L for _ in range(L)]
@@ -164,11 +158,6 @@ for i in range(N):
 # print("knights: ", knights)  # 기사 정보
 # print("q_list: ", q_list)  # 명령 집합
 
-# 시뮬레이션 시작 => 추후 연동
-for _ in range(Q):
-    k, d = map(int, input().split())
-    q_list.append((k, d))
-
 # 이동 함수
 '''
 1. 기사이동
@@ -182,12 +171,13 @@ for _ in range(Q):
 
 from copy import deepcopy
 from collections import deque
-
+# 시뮬레이션 시작
 init_damages={}
 for k in  knights:
     init_damages[k]=knights[k][4]
 
-for i, (k, d) in enumerate(q_list):
+for i in range(Q):
+    k, d = map(int, input().split())
     # print("===="+str(k)+"의 이동 방향:"+str(d)+"====")
 
     can_damage = True
@@ -247,13 +237,13 @@ for i, (k, d) in enumerate(q_list):
     # 체력 감소
 
     if can_damage:
-        # 명령받은 기사는 피해 받지 않음
-        if k in moved_k:
-            moved_k.remove(k)
-            # ✅ 여기 추가
-        actual_moved = [key for key in visited if k_pos.get(key) != init_pos.get(key)]
-        actual_moved = [key for key in actual_moved if key != k]
-        k_pos, k_board, knights = deepcopy(minus(k_pos, k_board, knights, k, actual_moved))
+        # 실제 움직였던 기사들만 확인
+        actual_moved=[]
+        for key in visited:
+            # 초기 위치와 다른 기사들 => 움직인 기사들만 추적 + 명령받은 기사는 피해 받지 않음
+            if k_pos[key] != init_pos[key] and key!=k:
+                actual_moved.append(key)
+        k_pos, k_board, knights = minus(k_pos, k_board, knights, k, actual_moved)
     # print()
     # print("after knights: ", knights)  # 기사 정보
     # print("after k_pos: ", k_pos)
