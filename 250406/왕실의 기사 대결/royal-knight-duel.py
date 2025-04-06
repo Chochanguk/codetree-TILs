@@ -4,9 +4,9 @@
 # input_iter = iter(input_lines)
 # input = lambda: next(iter(input_lines))
 
-with open('test_case.txt', 'r', encoding='utf-8') as file:
-    input_lines = [line.strip() for line in file]
-input = iter(input_lines).__next__
+# with open('test_case.txt', 'r', encoding='utf-8') as file:
+#     input_lines = [line.strip() for line in file]
+# input = iter(input_lines).__next__
 
 
 def move(k_pos, k, d):
