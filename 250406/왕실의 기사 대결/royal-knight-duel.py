@@ -1,3 +1,14 @@
+# with open('123.txt', 'r', encoding='utf-8') as file:
+#     input_lines = file.readlines()
+# input_lines = [line.strip() for line in input_lines]
+# input_iter = iter(input_lines)
+# input = lambda: next(iter(input_lines))
+
+with open('test_case.txt', 'r', encoding='utf-8') as file:
+    input_lines = [line.strip() for line in file]
+input = iter(input_lines).__next__
+
+
 def move(k_pos, k, d):
     directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # 상 우 하 좌
     dx, dy = directions[d]
@@ -17,7 +28,6 @@ def is_ok(board, L, sx, sy, ex, ey):
         for y in range(sy, ey + 1):
             if board[x][y] == 2:
                 return False
-
     return True
 
 
@@ -69,6 +79,8 @@ def minus(k_pos, k_board, knights, k, moved_k):
             continue
         n, x_list, y_list = find_bomb(key, k_pos)
         knights[key][4] -= n
+        # if n>0 and (key==6 or key==9):
+        #     # print(str(key) +"가 받은 피해: "+str(n))
         if knights[key][4] <= 0:
             deleted_list.append(key)
             (sx, sy), (ex, ey) = k_pos[key]
@@ -146,8 +158,13 @@ for i in range(N):
         for y in range(c, ec + 1):
             k_board[x][y] = (i + 1)
 
+# print("board:", board)  # 현재 함점, 벽의 상황
+# print("k_pos: ", k_pos)  # 기사의 시점, 종점 직사각형
+# print("k_board:, ", k_board)  # 기사위치를 마킹 있으면 기사번호 없으면 0
+# print("knights: ", knights)  # 기사 정보
+# print("q_list: ", q_list)  # 명령 집합
+
 # 시뮬레이션 시작 => 추후 연동
-total_damage = 0
 for _ in range(Q):
     k, d = map(int, input().split())
     q_list.append((k, d))
@@ -164,25 +181,28 @@ for _ in range(Q):
 '''
 
 from copy import deepcopy
+from collections import deque
 
 init_damages={}
 for k in  knights:
     init_damages[k]=knights[k][4]
 
 for i, (k, d) in enumerate(q_list):
+    # print("===="+str(k)+"의 이동 방향:"+str(d)+"====")
+
     can_damage = True
     if k not in k_pos:
         continue
 
     init_pos = deepcopy(k_pos)
     k_pos = move(k_pos, k, d)
-    moved_k = []  # 이동한 기사들을 넣음
+    moved_k = deque()  # 이동한 기사들을 넣음
     visited=set() # 움직였던 기사들을 넣음
     (sx, sy), (ex, ey) = k_pos[k]
     # 움직여도 괜찮으면
     if is_ok(board, L, sx, sy, ex, ey):
         # 다음 위치에 기사가 있냐?`
-        moved_k += is_knight(k_board, k, sx, sy, ex, ey)
+        moved_k.extend( is_knight(k_board, k, sx, sy, ex, ey))
 
         '''
         1. k_list의 기사 하나씩 이동
@@ -194,7 +214,7 @@ for i, (k, d) in enumerate(q_list):
 
         while moved_k:
 
-            knight = moved_k.pop()
+            knight = moved_k.popleft()
 
             if knight not in visited:
                 visited.add(knight)
@@ -204,7 +224,7 @@ for i, (k, d) in enumerate(q_list):
             k_pos = move(k_pos, knight, d)
             (sx, sy), (ex, ey) = k_pos[knight]
             if is_ok(board, L, sx, sy, ex, ey):
-                moved_k += is_knight(k_board, knight, sx, sy, ex, ey)
+                moved_k.extend( is_knight(k_board, knight, sx, sy, ex, ey))
         # print("전부다 이동 한 후k_pos: ",k_pos)
 
         # 체크 했는데 하나라도 잘못된 기사 있으면 원상복구
@@ -217,17 +237,30 @@ for i, (k, d) in enumerate(q_list):
         k_pos = move(k_pos, k, (d + 2) % 4)  # 반대로 다시 back
         can_damage = False
         continue
+    #
+    # print("before knights: ", knights)  # 기사 정보
+    # print("before k_pos: ", k_pos)
+    # print("before k_board:", k_board)
+    # print("before knights: ", knights)  # 기사 정보
     # k_pos를 통한 k_board 갱신
     k_board = deepcopy(update_k_board(L, k_pos))
     # 체력 감소
+
     if can_damage:
         # 명령받은 기사는 피해 받지 않음
         if k in moved_k:
             moved_k.remove(k)
-        if i != len(q_list) - 1:
-            k_pos, k_board, knights = deepcopy(minus( k_pos, k_board, knights,k,list(visited)))
-
-
+            # ✅ 여기 추가
+        actual_moved = [key for key in visited if k_pos.get(key) != init_pos.get(key)]
+        actual_moved = [key for key in actual_moved if key != k]
+        k_pos, k_board, knights = deepcopy(minus(k_pos, k_board, knights, k, actual_moved))
+    # print()
+    # print("after knights: ", knights)  # 기사 정보
+    # print("after k_pos: ", k_pos)
+    # print("after k_board:", k_board)
+    # print("after knights: ", knights)  # 기사 정보
+    # print()
+total_damage=0
 for k in  knights:
     total_damage+= init_damages[k]-knights[k][4]
 
