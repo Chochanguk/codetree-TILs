@@ -22,45 +22,57 @@ def find_d(sx,sy,exit_x,exit_y):
 def find_distance(sx,sy,ex,ey):
     return abs(sx-ex)+abs(sy-ey)
 
-def move(N,board,runner):
-    cnt=0 # 총 움직인 거리 수
-    # 바뀐 좌표와 러너들의 위치 변경
+def move(N, board, runner):
+    cnt = 0
     to_delete = []
-    exit_x, exit_y =runner[-1]
-    #1. runner를 먼저 수정후에
-    for r,v in runner.items():
-        # 만약 탈출구라면 러너만 탐색
-        if r==-1:
+    exit_x, exit_y = runner[-1]
+
+    new_runner = {}
+
+    for r, v in runner.items():
+        if r == -1:
+            new_runner[r] = v
             continue
 
-        # 만약 도달했으면 runner는 없앰
-        sx,sy=v[0],v[1]
-        d=find_d(sx,sy,exit_x,exit_y)
+        sx, sy, _ = v
+        if (sx, sy) == (exit_x, exit_y):
+            to_delete.append(r)
+            continue
 
-        dx,dy=directions[d]
-        nx,ny=sx+dx,sy+dy
-        # 빈칸인 경우에만 이동
-        if 0<=nx<N and 0<=ny<N and board[nx][ny]==0:
-            cnt+=1
-            runner[r]=(nx,ny,d)
-            # 만약 도달했으면 runner는 없앰
+        d = find_d(sx, sy, exit_x, exit_y)
+        dx, dy = directions[d]
+        nx, ny = sx + dx, sy + dy
+
+        # 우선 기본 방향 이동
+        if 0 <= nx < N and 0 <= ny < N and board[nx][ny] == 0:
+            cnt += 1
             if (nx, ny) == (exit_x, exit_y):
                 to_delete.append(r)
-        # 빈칸이 아니면 다른 방향도 고려.
-        for i,(dx,dy) in enumerate(directions):
-            # 찾은 방향이랑 다르면
-            if i!=d:
-                nx,ny=sx+dx,sy+dy
-                s_dis= find_distance(sx,sy,exit_x,exit_y)
-                an_dis= find_distance(nx,ny,exit_x,exit_y)+1
-                if 0 <= nx < N and 0 <= ny < N and board[nx][ny] == 0 and an_dis<s_dis:
-                    cnt += 1
-                    runner[r] = (nx, ny, d)
+                continue
+            new_runner[r] = (nx, ny, d)
+        else:
+            moved = False
+            for i, (adx, ady) in enumerate(directions):
+                if i == d:
+                    continue
+                ax, ay = sx + adx, sy + ady
+                if 0 <= ax < N and 0 <= ay < N and board[ax][ay] == 0:
+                    if find_distance(ax, ay, exit_x, exit_y) < find_distance(sx, sy, exit_x, exit_y):
+                        cnt += 1
+                        if (ax, ay) == (exit_x, exit_y):
+                            to_delete.append(r)
+                        else:
+                            new_runner[r] = (ax, ay, d)
+                        moved = True
+                        break
+            if not moved:
+                new_runner[r] = (sx, sy, d)
 
     for r in to_delete:
-        del runner[r]
-    return runner,cnt #러너와 이동 거리 반환
+        if r in new_runner:
+            del new_runner[r]
 
+    return new_runner, cnt
 
 
 # 돌릴 시점,종료으로 보드판을 돌려 board, exit, runner를 반환
@@ -165,11 +177,11 @@ for r,v in runner.items():
     d=find_d(sx,sy,exit_x,exit_y)
     if r>=0:
         runner[r]=(sx,sy,d)
-
+# print()
 # print("init board:",board)
 # print("init runner: ",runner)
 # print()
-#
+
 
 for t in range(K):
     runner,moved =move(N,board, runner)
