@@ -44,7 +44,7 @@ def laser_attack(board, towers, sx, sy, ex, ey):
         x, y = q.popleft()
         if (x, y) == (ex, ey):
             is_ok = True
-            continue
+            # continue
         for dx, dy in dirs:
             nx, ny = (x+dx)%N, (y+dy)%M
             if board[nx][ny] == 0 or visited[nx][ny]:
