@@ -112,7 +112,6 @@ def laser_attack(board, towers, sx, sy, ex, ey):
     # 경로 복원
     path = []
     cx, cy = ex, ey
-    # print("prev:", prev)
     while (cx, cy) != (sx, sy):
         path.append((cx, cy))
         cx, cy = prev[cx][cy]  # 현재 좌표 도달 전 좌표
@@ -144,7 +143,7 @@ def cannon_attack(board, towers, sx, sy, ex, ey):
     N, M = len(board), len(board[0])
     directions = [(0, 1), (1, 0), (0, -1), (-1, 0), (-1,-1), (-1,1), (1,-1), (1,1)]  # 우, 하, 좌, 상
 
-    damage=board[ex][ey]
+    damage=board[sx][sy]
     # 주변 8개 공격 받음
     for dx, dy in directions:
         nx,ny=(ex+dx)%N,(ey+dy)%M
@@ -153,8 +152,8 @@ def cannon_attack(board, towers, sx, sy, ex, ey):
             board[nx][ny] = max(0, board[nx][ny] - damage // 2)
             towers[(nx, ny)][0] = board[nx][ny]
             towers[(nx, ny)][2] = True
-    # 자기 자신도 공격 받음
 
+    # 자기 자신도 공격 받음
     board[ex][ey] = max(0, board[ex][ey]-damage)
     towers[(ex,ey)][0] = board[ex][ey]
     towers[(ex,ey)][2] = True
@@ -183,7 +182,7 @@ def recover(t,sx,sy,ex,ey,board,towers):
 N, M, K = map(int, input().split())
 board = []
 towers = {}
-
+is_return = False  # 결과 출력한 적 있는지
 for i in range(N):
     row = list(map(int, input().split()))
     for j in range(M):
@@ -191,23 +190,33 @@ for i in range(N):
     board.append(row)
 
 for t in range(1, K + 1):
+
+    # print("=======시간: "+str(t)+"=======")
+    # print("before board: ", board)
+    # print("before towers: ", towers)
     sx, sy, towers,board = find_weak(t, board, towers)
     ex, ey, towers,board = find_strong(sx, sy, board, towers)
-
+    # 둘중에 하나 선택 후 공격
     is_ok, board, towers = laser_attack(board, towers, sx, sy, ex, ey)
-
+    # 통과 못했으면,
     if not is_ok:
         board, towers = cannon_attack(board, towers, sx, sy, ex, ey)
-
+    # 만약 보드에 포탑이 1개면
     if is_last(board):
         ex, ey, towers,board = find_strong(-1,-1,board, towers)
         print(towers[(ex, ey)][0])
+        is_return=True
         break
 
     board, towers = recover(t, sx, sy, ex, ey, board, towers)
 
-else:
-    # 끝까지 돌았으면 마지막 강한 포탑 출력
+    # print()
+    # print("after board: ",board)
+    # print("after towers: ",towers)
+    # print()
+
+# 끝까지 돌았으면 마지막 강한 포탑 출력
+if not is_return:
     ex, ey, towers,board = find_strong(-1,-1,board, towers)
     print(towers[(ex, ey)][0])
 
@@ -264,4 +273,23 @@ k 반복 중, 만약 부서지지 않은 포탑이 1개가 되면 그 즉시 중
 턴 종료
 
 
+4 4 1
+0 1 4 4
+8 0 10 13
+8 0 11 26
+0 0 0 0
+
+
+4 4 2
+0 1 4 4
+8 0 10 13
+8 0 11 26
+0 0 0 0
+
+
+4 4 3
+6 8 0 1
+0 0 0 0
+0 0 0 0
+0 0 8 0
 '''
