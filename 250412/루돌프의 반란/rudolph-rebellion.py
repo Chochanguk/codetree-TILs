@@ -35,13 +35,14 @@ def update_dis(rx,ry,santas):
     return santas
 
 def find_santa(ex,ey,santas):
-    n=0
+
     for k,v in santas.items():
         sx,sy=v[0],v[1]
-        if (sx,sy)==(ex,ey)and not v[3]:  # 탈락 안한 산타만 찾기
-            n=k
-            break
-    return n
+        if v[3]:  # 이미 탈락했으면 continue
+            continue
+        if (sx, sy) == (ex, ey):
+            return k
+    return 0
 
 # 연쇄작용
 def contract(N, santa, santas, dx, dy):
@@ -79,7 +80,7 @@ def rudolph_crash(C, t, dx, dy, rudols, santas, board):
     # print(santas)
     for k, v in santas.items():
         sx, sy = v[0], v[1]
-        if (sx, sy) == (rx, ry):
+        if (sx, sy) == (rx, ry) and not v[3]:
             # 밀려난 산타에 대한 정보 업데이트
             santas[k][5] += C  # 점수 얻음
             santas[k][2] = t  # 기절 시각 체크
@@ -87,12 +88,12 @@ def rudolph_crash(C, t, dx, dy, rudols, santas, board):
             nsx, nsy = sx + (dx * C), sy + (dy * C)
             # 해당 좌표의 산타를 찾고,
             temp_s = find_santa(nsx, nsy,santas)
-            # 값 갱신
-            santas[k][0], santas[k][1] = nsx, nsy  # 위치변경
             # 격자 밖에 있으면 탈락
             if nsx < 0 or nsx >= N or nsy < 0 or nsy >= N:
                 santas[k][3] = True
-            break
+            else:
+                santas[k][0], santas[k][1] = nsx, nsy
+
     # 만약 부딪힌 산타가 있으면?
     if temp_s != 0:
         santas = contract(N, temp_s, santas, dx, dy)
@@ -101,6 +102,8 @@ def rudolph_crash(C, t, dx, dy, rudols, santas, board):
     board = [[0] * N for _ in range(N)]
     board[rx][ry] = -1
     for k, v in santas.items():
+        if v[3]:  # 탈락한 산타 패스
+            continue
         sx, sy = v[0], v[1]
         if 0 <= sx < N and 0 <= sy < N:
             board[sx][sy] = k
@@ -115,6 +118,8 @@ def r_move(t, rudols,santas):
     # 이동한 곳이 산타랑 가장
     min_dis_list = []  # 루돌프와 산타 중 거리가 가장 가까운 리스트 모음
     for santa, v in santas.items():
+        if v[3]:  # 탈락
+            continue
         min_dis_list.append([santa] + v)
     # 탈락하지 않았고, 거리가 가까우면서, r,c가 큰것
     min_dis_list.sort(key=lambda x: (x[4], x[5], -x[1], -x[2]))
@@ -169,7 +174,7 @@ def s_move(t, N, rudols, santas, board):
             nx, ny = sx + dx, sy + dy
             santas[k][0], santas[k][1] = nx, ny
             # 루돌프랑 충돌?
-            if (nx, ny) == (rx, ry):
+            if (nx, ny) == (rx, ry) and not v[3]:
                 santas[k][5] += D
                 santas[k][2] = t
 
@@ -241,9 +246,9 @@ for t in range(1,M+1):
 
     # 1. 루돌프 움직임
     rudols, dx, dy = r_move(t, rudols, santas)
+    # print("루돌프 이동 후 rudols:", rudols)
     # 2. 루돌프의 충돌시 
     board, rudols, santas = rudolph_crash(C, t, dx, dy, rudols, santas, board)
-    # print("루돌프 이동 후 rudols:", rudols)
     # print("루돌프 충돌 후 santas:",santas)
     if is_end(santas):
         # print("루돌프 충돌로 인한 끝")
