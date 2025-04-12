@@ -209,7 +209,7 @@ def is_end(santas):
 
 # 산타 점수 출력하기
 def print_score(santas):
-    for k in sorted(santas.keys()):
+    for k in santas:
         print(santas[k][5],end=' ')
     return
 
@@ -221,6 +221,13 @@ def plus_score(santas):
     return santas
 
 is_over=False
+
+# 산타 딕셔너리 정렬 처리
+new_santas = {}
+for k in sorted(santas.keys()):
+    new_santas[k] = santas[k]
+santas = new_santas
+
 
 for t in range(1,M+1):
 
