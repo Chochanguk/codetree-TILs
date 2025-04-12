@@ -35,14 +35,13 @@ def update_dis(rx,ry,santas):
     return santas
 
 def find_santa(ex,ey,santas):
-
+    n=0
     for k,v in santas.items():
         sx,sy=v[0],v[1]
-        if v[3]:  # 이미 탈락했으면 continue
-            continue
-        if (sx, sy) == (ex, ey):
-            return k
-    return 0
+        if (sx,sy)==(ex,ey)and not v[3]:  # 탈락 안한 산타만 찾기
+            n=k
+            break
+    return n
 
 # 연쇄작용
 def contract(N, santa, santas, dx, dy):
@@ -53,6 +52,7 @@ def contract(N, santa, santas, dx, dy):
 
     while q:
         santa = q.popleft()
+        # print("연쇄 santa: ",santa)
         bx, by = santas[santa][0], santas[santa][1]
         nx, ny = bx + dx, by + dy  # 이동 처리(1칸 이동)
         # 만약 격자 밖이면 탈락처리
@@ -65,7 +65,7 @@ def contract(N, santa, santas, dx, dy):
             # board 기준 다른 산타 있는지 확인
         another = board[nx][ny]
         # 만약 해당 산타가 존재하면 또 큐에 넣음
-        if another >=1:
+        if another >= 1 and another != santa:
             q.append(another)
     # print("santas: ",santas)
     return santas
@@ -88,12 +88,14 @@ def rudolph_crash(C, t, dx, dy, rudols, santas, board):
             nsx, nsy = sx + (dx * C), sy + (dy * C)
             # 해당 좌표의 산타를 찾고,
             temp_s = find_santa(nsx, nsy,santas)
+            # 값 갱신
+            santas[k][0], santas[k][1] = nsx, nsy  # 위치변경
             # 격자 밖에 있으면 탈락
             if nsx < 0 or nsx >= N or nsy < 0 or nsy >= N:
                 santas[k][3] = True
             else:
                 santas[k][0], santas[k][1] = nsx, nsy
-
+            break
     # 만약 부딪힌 산타가 있으면?
     if temp_s != 0:
         santas = contract(N, temp_s, santas, dx, dy)
@@ -174,7 +176,7 @@ def s_move(t, N, rudols, santas, board):
             nx, ny = sx + dx, sy + dy
             santas[k][0], santas[k][1] = nx, ny
             # 루돌프랑 충돌?
-            if (nx, ny) == (rx, ry) and not v[3]:
+            if (nx, ny) == (rx, ry):
                 santas[k][5] += D
                 santas[k][2] = t
 
@@ -246,9 +248,9 @@ for t in range(1,M+1):
 
     # 1. 루돌프 움직임
     rudols, dx, dy = r_move(t, rudols, santas)
-    # print("루돌프 이동 후 rudols:", rudols)
-    # 2. 루돌프의 충돌시 
+    # 2. 루돌프의 충돌시
     board, rudols, santas = rudolph_crash(C, t, dx, dy, rudols, santas, board)
+    # print("루돌프 이동 후 rudols:", rudols)
     # print("루돌프 충돌 후 santas:",santas)
     if is_end(santas):
         # print("루돌프 충돌로 인한 끝")
@@ -272,3 +274,4 @@ for t in range(1,M+1):
 
 if not is_over:
     print_score(santas)
+
