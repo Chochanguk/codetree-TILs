@@ -43,32 +43,44 @@ def find_santa(ex,ey,santas):
             break
     return n
 
+def update_board(N, rudols, santas):
+    board = [[0] * N for _ in range(N)]
+    rx, ry = rudols[-1]
+    board[rx][ry] = -1
+    for k, v in santas.items():
+        if v[3]: continue
+        sx, sy = v[0], v[1]
+        board[sx][sy] = k
+    return board
+
 # 연쇄작용
 def contract(N, santa, santas, dx, dy):
-    # 연쇄 작용실시
     q = deque()
-    # 산타를 집어 넣음
     q.append(santa)
 
     while q:
-        santa = q.popleft()
-        # print("연쇄 santa: ",santa)
-        bx, by = santas[santa][0], santas[santa][1]
-        nx, ny = bx + dx, by + dy  # 이동 처리(1칸 이동)
-        # 만약 격자 밖이면 탈락처리
+        cur = q.popleft()
+        x, y = santas[cur][0], santas[cur][1]
+
+        # 이동 전에 해당 위치 산타 번호 저장
+        prev = board[x][y]
+
+        nx, ny = x + dx, y + dy # 한칸 이동
+
+        # 격자 밖으로 나가면 탈락
         if nx < 0 or nx >= N or ny < 0 or ny >= N:
-            # print("연쇄 탈락 산타",  santa )
-            # print(nx,ny)
-            santas[santa][3] = True
+            santas[cur][3] = True
             continue
-        santas[santa][0], santas[santa][1] = nx, ny
-            # board 기준 다른 산타 있는지 확인
-        another = board[nx][ny]
-        # 만약 해당 산타가 존재하면 또 큐에 넣음
-        if another >= 1 and another != santa:
-            q.append(another)
-    # print("santas: ",santas)
+
+        # 현재 산타 이동 처리
+        santas[cur][0], santas[cur][1] = nx, ny
+
+        # 만약 다른 산타가 있었다면 연쇄 처리
+        if board[nx][ny] != 0:
+            q.append(board[nx][ny])
+
     return santas
+
 
 
 def rudolph_crash(C, t, dx, dy, rudols, santas, board):
@@ -77,10 +89,12 @@ def rudolph_crash(C, t, dx, dy, rudols, santas, board):
     rx, ry = rudols[-1]
 
     temp_s = 0  # 산타가 아니면 0
+    c_sanat=-1
     # print(santas)
     for k, v in santas.items():
         sx, sy = v[0], v[1]
         if (sx, sy) == (rx, ry) and not v[3]:
+            c_santa=find_santa(sx, sy,santas)
             # 밀려난 산타에 대한 정보 업데이트
             santas[k][5] += C  # 점수 얻음
             santas[k][2] = t  # 기절 시각 체크
@@ -88,27 +102,28 @@ def rudolph_crash(C, t, dx, dy, rudols, santas, board):
             nsx, nsy = sx + (dx * C), sy + (dy * C)
             # 해당 좌표의 산타를 찾고,
             temp_s = find_santa(nsx, nsy,santas)
-            # 값 갱신
-            santas[k][0], santas[k][1] = nsx, nsy  # 위치변경
             # 격자 밖에 있으면 탈락
             if nsx < 0 or nsx >= N or nsy < 0 or nsy >= N:
                 santas[k][3] = True
             else:
-                santas[k][0], santas[k][1] = nsx, nsy
+                # 현재 산타 값 갱신
+                santas[k][0], santas[k][1] = nsx, nsy  # 위치변경
+
             break
     # 만약 부딪힌 산타가 있으면?
-    if temp_s != 0:
+    if temp_s != 0 and temp_s!=c_santa:
         santas = contract(N, temp_s, santas, dx, dy)
 
     # 충돌 및 연쇄 상호 작업 후에 rudols와 sants로 board 재마킹
-    board = [[0] * N for _ in range(N)]
-    board[rx][ry] = -1
-    for k, v in santas.items():
-        if v[3]:  # 탈락한 산타 패스
-            continue
-        sx, sy = v[0], v[1]
-        if 0 <= sx < N and 0 <= sy < N:
-            board[sx][sy] = k
+    board=update_board(N, rudols, santas)
+    # board = [[0] * N for _ in range(N)]
+    # board[rx][ry] = -1
+    # for k, v in santas.items():
+    #     if v[3]:  # 탈락한 산타 패스
+    #         continue
+    #     sx, sy = v[0], v[1]
+    #     if 0 <= sx < N and 0 <= sy < N:
+    #         board[sx][sy] = k
     return board, rudols, santas
 
 
@@ -141,7 +156,6 @@ def r_move(t, rudols,santas):
     rnx,rny=rx+dx,ry+dy
 
     rudols[-1]=(rnx,rny)
-
 
     return rudols,dx,dy
 
@@ -176,7 +190,7 @@ def s_move(t, N, rudols, santas, board):
             nx, ny = sx + dx, sy + dy
             santas[k][0], santas[k][1] = nx, ny
             # 루돌프랑 충돌?
-            if (nx, ny) == (rx, ry):
+            if (nx, ny) == (rx, ry) and not v[3]:
                 santas[k][5] += D
                 santas[k][2] = t
 
@@ -195,16 +209,8 @@ def s_move(t, N, rudols, santas, board):
                     santas = contract(N, another_s, santas, dx, dy)
 
         # 매 산타 이동 후 board 갱신
-        board = [[0] * N for _ in range(N)]
-        board[rx][ry] = -1
-        for k, v in santas.items():
-            sx, sy = v[0], v[1]
-            if 0 <= sx < N and 0 <= sy < N:
-                board[sx][sy] = k
-
+        board=update_board(N, rudols, santas)
     return rudols, santas, board
-
-
 
 
 # 게임종료인가
