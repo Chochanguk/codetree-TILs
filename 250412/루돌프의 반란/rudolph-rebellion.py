@@ -54,7 +54,8 @@ def update_board(N, rudols, santas):
     return board
 
 # 연쇄작용
-def contract(N, santa, santas, dx, dy):
+# 연쇄작용
+def contract(N, santa, santas, dx, dy,board):
     q = deque()
     q.append(santa)
 
@@ -80,6 +81,8 @@ def contract(N, santa, santas, dx, dy):
             q.append(board[nx][ny])
 
     return santas
+
+
 
 
 
@@ -110,26 +113,20 @@ def rudolph_crash(C, t, dx, dy, rudols, santas, board):
                 santas[k][0], santas[k][1] = nsx, nsy  # 위치변경
 
             break
-    # 만약 부딪힌 산타가 있으면?
-    if temp_s != 0 and temp_s!=c_santa:
-        santas = contract(N, temp_s, santas, dx, dy)
-
     # 충돌 및 연쇄 상호 작업 후에 rudols와 sants로 board 재마킹
     board=update_board(N, rudols, santas)
-    # board = [[0] * N for _ in range(N)]
-    # board[rx][ry] = -1
-    # for k, v in santas.items():
-    #     if v[3]:  # 탈락한 산타 패스
-    #         continue
-    #     sx, sy = v[0], v[1]
-    #     if 0 <= sx < N and 0 <= sy < N:
-    #         board[sx][sy] = k
+
+    # 만약 부딪힌 산타가 있으면?
+    if temp_s != 0 and temp_s!=c_santa:
+        santas = contract(N, temp_s, santas, dx, dy,board)
+    # 충돌 및 연쇄 상호 작업 후에 rudols와 sants로 board 재마킹
+    board=update_board(N, rudols, santas)
+
     return board, rudols, santas
 
 
-
 # 루돌프의 움직임
-def r_move(t, rudols,santas):
+def r_move(rudols,santas):
     rx,ry=rudols[-1]
 
     # 이동한 곳이 산타랑 가장
@@ -139,7 +136,7 @@ def r_move(t, rudols,santas):
             continue
         min_dis_list.append([santa] + v)
     # 탈락하지 않았고, 거리가 가까우면서, r,c가 큰것
-    min_dis_list.sort(key=lambda x: (x[4], x[5], -x[1], -x[2]))
+    min_dis_list.sort(key=lambda x: (x[5], -x[1], -x[2]))
     # print(min_dis_list)
     n, ex, ey = min_dis_list[0][0], min_dis_list[0][1], min_dis_list[0][2]
 
@@ -156,7 +153,6 @@ def r_move(t, rudols,santas):
     rnx,rny=rx+dx,ry+dy
 
     rudols[-1]=(rnx,rny)
-
     return rudols,dx,dy
 
 
@@ -206,7 +202,7 @@ def s_move(t, N, rudols, santas, board):
                 santas[k][0], santas[k][1] = nsx, nsy # 값 갱신
 
                 if another_s != 0 and not santas[another_s][3]:
-                    santas = contract(N, another_s, santas, dx, dy)
+                    santas = contract(N, another_s, santas, dx, dy,board)
 
         # 매 산타 이동 후 board 갱신
         board=update_board(N, rudols, santas)
@@ -253,7 +249,7 @@ for t in range(1,M+1):
     # print()
 
     # 1. 루돌프 움직임
-    rudols, dx, dy = r_move(t, rudols, santas)
+    rudols, dx, dy = r_move(rudols, santas)
     # 2. 루돌프의 충돌시
     board, rudols, santas = rudolph_crash(C, t, dx, dy, rudols, santas, board)
     # print("루돌프 이동 후 rudols:", rudols)
@@ -274,6 +270,8 @@ for t in range(1,M+1):
         break
     # 4.
     santas=plus_score(santas)
+    # print("턴", t, "끝 점수:", [santas[k][5] for k in sorted(santas.keys())])
+    #
     # print("after rudols: ", rudols)
     # print("after santas:", santas)  # 산타들의 정보
     # print()
