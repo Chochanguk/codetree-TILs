@@ -53,72 +53,35 @@ def update_board(N, rudols, santas):
         board[sx][sy] = k
     return board
 
-# 연쇄작용
-# 연쇄작용
-def contract(N, santa, santas, dx, dy,board):
-    q = deque()
-    q.append(santa)
-
+# 연쇄 충돌 처리
+def contract(N, santa, santas, dx, dy, board):
+    q = deque([santa])
     while q:
         cur = q.popleft()
         x, y = santas[cur][0], santas[cur][1]
-
-        # 이동 전에 해당 위치 산타 번호 저장
-        prev = board[x][y]
-
-        nx, ny = x + dx, y + dy # 한칸 이동
-
-        # 격자 밖으로 나가면 탈락
+        nx, ny = x + dx, y + dy
         if nx < 0 or nx >= N or ny < 0 or ny >= N:
             santas[cur][3] = True
             continue
-
-        # 현재 산타 이동 처리
-        santas[cur][0], santas[cur][1] = nx, ny
-
-        # 만약 다른 산타가 있었다면 연쇄 처리
-        if board[nx][ny] != 0:
+        if board[nx][ny]:
             q.append(board[nx][ny])
+        santas[cur][0], santas[cur][1] = nx, ny
 
     return santas
 
-
-
-
-
 def rudolph_crash(C, t, dx, dy, rudols, santas, board):
-    # 일단 겹치는게 있는지 찾아보기
-    N = len(board)
     rx, ry = rudols[-1]
-
-    temp_s = 0  # 산타가 아니면 0
-    c_sanat=-1
-    # print(santas)
-    for k, v in santas.items():
-        sx, sy = v[0], v[1]
-        if (sx, sy) == (rx, ry) and not v[3]:
-            c_santa=find_santa(sx, sy,santas)
-            # 밀려난 산타에 대한 정보 업데이트
-            santas[k][5] += C  # 점수 얻음
-            santas[k][2] = t  # 기절 시각 체크
-
-            nsx, nsy = sx + (dx * C), sy + (dy * C)
-            # 해당 좌표의 산타를 찾고,
-            temp_s = find_santa(nsx, nsy,santas)
-            # 격자 밖에 있으면 탈락
-            if nsx < 0 or nsx >= N or nsy < 0 or nsy >= N:
-                santas[k][3] = True
-            else:
-                # 현재 산타 값 갱신
-                santas[k][0], santas[k][1] = nsx, nsy  # 위치변경
-
-            break
-    # 충돌 및 연쇄 상호 작업 후에 rudols와 sants로 board 재마킹
-    board=update_board(N, rudols, santas)
-
-    # 만약 부딪힌 산타가 있으면?
-    if temp_s != 0 and temp_s!=c_santa:
-        santas = contract(N, temp_s, santas, dx, dy,board)
+    s = board[rx][ry]
+    if s:
+        santas[s][5] += C
+        santas[s][2] = t
+        nx, ny = santas[s][0] + dx * C, santas[s][1] + dy * C
+        if nx < 0 or nx >= len(board) or ny < 0 or ny >= len(board):
+            santas[s][3] = True
+        else:
+            if board[nx][ny] and board[nx][ny] != s:
+                contract(len(board), board[nx][ny], santas, dx, dy, board)
+            santas[s][0], santas[s][1] = nx, ny
     # 충돌 및 연쇄 상호 작업 후에 rudols와 sants로 board 재마킹
     board=update_board(N, rudols, santas)
 
